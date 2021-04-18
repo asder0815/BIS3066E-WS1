@@ -59,6 +59,7 @@
       profitMarginTarget: 2, 
       budgetInterval: 25000000,
       showMaxChart: 20, 
+      maxDecimals: 2, 
       graphValue: [0, 2, 5, 9, 5, 10, 3, 5, 0, 0, 1, 8, 2, 9, 0], 
       graphData: {
         width: 2,
@@ -165,7 +166,7 @@
         });
         return result; 
       },
-      analyzeTextAtrribute(attributeList, chartName) {
+      analyzeTextAtrribute(attributeList, chartName, normalize = true) {
         var result = []; 
         var baseGross = this.onlyBlockbusters ? this.blockbusterGross : 1; 
         this.cleanedData.forEach(movie => {
@@ -174,20 +175,14 @@
             if(movie[valueNr] != "") valueList.push({name: movie[valueNr], value: movie.gross / baseGross}); 
           }); 
           valueList.forEach(value => {
-            if(result.some(e => e.name === value.name)) {
-              result[result.findIndex(e => e.name === value.name)].value += value.value; 
-            }
-            else {
-              result.push(value); 
-            }
+            if(result.some(e => e.name === value.name)) result[result.findIndex(e => e.name === value.name)].value += value.value; 
+            else result.push(value); 
           });
         }); 
-        result.sort(this.sortByValue); 
-        result.forEach(value => {
-          console.log(value.name + " Value: " + value.value); 
-        }); 
-        var dataHandle = chartName + "Data"; console.log(dataHandle); console.log(this[dataHandle]); 
-        var optionHandle = chartName + "Options"; console.log(optionHandle); console.log(this[optionHandle]); 
+        if(normalize) result = this.normalizeByValue(result); 
+        else result.sort(this.sortByValue); 
+        var dataHandle = chartName + "Data"; 
+        var optionHandle = chartName + "Options";
         var newData = [{data: []}]; 
         var newOptions = JSON.parse(JSON.stringify(this[optionHandle]));
         for(var i = result.length -1; i >= result.length - 1 - this.showMaxChart; i--) {
@@ -284,6 +279,14 @@
       sortByInterval(a,b) {
         return a.interval === b.interval ? 0 : a.interval > b.interval ? 1 : -1; 
       },
+      normalizeByValue(array) {
+        array.sort(this.sortByValue); 
+        var max = array[array.length-1].value; 
+        array.forEach(element => {
+          element.value = (element.value * 100 / max).toFixed(this.maxDecimals); 
+        }); 
+        return array; 
+      }
     }
   }
 </script>
