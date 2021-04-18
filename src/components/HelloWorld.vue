@@ -66,6 +66,7 @@
       budgetInterval: 25000000,
       showMaxChart: 20, 
       maxDecimals: 2, 
+      minAmountForAverage: 4, 
       graphValue: [0, 2, 5, 9, 5, 10, 3, 5, 0, 0, 1, 8, 2, 9, 0], 
       graphData: {
         width: 2,
@@ -202,6 +203,7 @@
                 name: keyword, 
                 above: (movie.gross / movie.budget) > this.profitMarginTarget ? 1 : 0, 
                 below: (movie.gross / movie.budget) > this.profitMarginTarget ? 0 : 1, 
+                amount: 1,
                 value: 0}); 
             }); 
           }
@@ -210,6 +212,7 @@
               var target = result[result.findIndex(e => e.name === keyword.name)]; 
               target.above += keyword.above;
               target.below += keyword.below; 
+              target.amount++; 
               target.value = (target.above) / (target.above + target.below); 
             }
             else {
@@ -223,6 +226,7 @@
           keyword.value = (keyword.value * 100).toFixed(this.maxDecimals); 
           console.log(keyword.name + " has a " + keyword.value + "% chance to exceed a profit margin of " + this.profitMarginTarget + "with " + keyword.above + " values above and " + keyword.below + " values below"); 
         }); 
+        result = this.filterAmount(result); 
         this.updateValueGraph(result, false, chartName); 
       },
       analyzeDiminishingReturns() {
@@ -268,8 +272,7 @@
             else result.push(value); 
           });
         }); 
-        result.sort(this.sortByValue); 
-        console.log(result); 
+        result = this.filterAmount(result); 
         this.updateValueGraph(result, false, chartName); 
       }, 
       sortByValue(a,b) {
@@ -294,7 +297,7 @@
         var optionHandle = chartName + "Options";
         var newData = [{data: []}]; 
         var newOptions = JSON.parse(JSON.stringify(this[optionHandle]));
-        for(var i = result.length -1; i >= result.length - 1 - this.showMaxChart; i--) {
+        for(var i = result.length -1; i >= this.clamp(result.length - 1 - this.showMaxChart, 0); i--) {
           newData[0].data.push(result[i].value); 
           newOptions.xaxis.categories.push(result[i].name); 
         }
@@ -307,10 +310,20 @@
         }); 
         return array; 
       }, 
+      filterAmount(array) {
+        var result = []; 
+        array.forEach(element => {
+          if(element.amount >= this.minAmountForAverage) result.push(element); 
+        });  
+        return result; 
+      },
       movieValid(movie) {
         return movie.name != "" && movie.budget != "" && movie.gross != "" 
           && movie.gross <= this.maxGrossing && movie.budget <= this.maxBudget
           && movie.gross / movie.budget <= this.maxProfitMargin && movie.gross / movie.budget >= this.minProfitMargin
+      }, 
+      clamp(value, min, max) {
+        return value <= min ? min : value >= max ? max : value;
       }
     }
   }
