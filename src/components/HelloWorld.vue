@@ -9,8 +9,8 @@
     </v-row>
     <v-btn elevation="2" @click="analyzeTextAtrribute(['actor_1_name','actor_2_name','actor_3_name'], 'actorValueChart')" :disabled=!dataCleaned>Actor Values</v-btn>
     <v-btn elevation="2" @click="analyzeTextAtrribute(['director_name'], 'directorValueChart')" :disabled=!dataCleaned>Director Values</v-btn>
-    <v-btn elevation="2" @click="analyzeKeywords('genres')" :disabled=!dataCleaned>Genres</v-btn>
-    <v-btn elevation="2" @click="analyzeKeywords('plot_keywords')" :disabled=!dataCleaned>Plot</v-btn>
+    <v-btn elevation="2" @click="analyzeKeywords('genres', 'genreValueChart')" :disabled=!dataCleaned>Genres</v-btn>
+    <v-btn elevation="2" @click="analyzeKeywords('plot_keywords', 'plotValueChart')" :disabled=!dataCleaned>Plot</v-btn>
     <v-btn elevation="2" @click="analyzeKeywordProfit('genres')" :disabled=!dataCleaned>Genres Profit</v-btn>
     <v-btn elevation="2" @click="analyzeKeywordProfit('plot_keywords')" :disabled=!dataCleaned>Plot Profit</v-btn>
     <v-btn elevation="2" @click="analyzeDiminishingReturns()" :disabled=!dataCleaned>Update Graph</v-btn>
@@ -31,6 +31,8 @@
 
     <apexchart ref="actorValueChart" type="bar" height="350" :options="actorValueChartOptions" :series="actorValueChartData"></apexchart>
     <apexchart ref="directorValueChart" type="bar" height="350" :options="directorValueChartOptions" :series="directorValueChartData"></apexchart>
+    <apexchart ref="genreValueChart" type="bar" height="350" :options="genreValueChartOptions" :series="genreValueChartData"></apexchart>
+    <apexchart ref="plotValueChart" type="bar" height="350" :options="plotValueChartOptions" :series="plotValueChartData"></apexchart>
 
   </v-container>
 </template>
@@ -87,6 +89,22 @@
         plotOptions: { bar: { borderRadius: 4 } },
         dataLabels: { enabled: false },
         title: { text: 'Director Value' },
+        xaxis: { categories: [] }
+      }, 
+      genreValueChartData: [{ data: [] }],
+      genreValueChartOptions: {
+        chart: { type: 'bar', height: 350 },
+        plotOptions: { bar: { borderRadius: 4 } },
+        dataLabels: { enabled: false },
+        title: { text: 'Genre Value' },
+        xaxis: { categories: [] }
+      }, 
+      plotValueChartData: [{ data: [] }],
+      plotValueChartOptions: {
+        chart: { type: 'bar', height: 350 },
+        plotOptions: { bar: { borderRadius: 4 } },
+        dataLabels: { enabled: false },
+        title: { text: 'Plot Keyword Value' },
         xaxis: { categories: [] }
       }
     }),
@@ -192,7 +210,7 @@
         this[dataHandle] = newData; 
         this[optionHandle] = newOptions; 
       }, 
-      analyzeKeywords(attribute) {
+      analyzeKeywords(attribute, chartName, normalize = true) {
         var result = []; 
         var baseGross = this.onlyBlockbusters ? this.blockbusterGross : 1; 
         this.cleanedData.forEach(movie => {
@@ -203,18 +221,22 @@
             }); 
           }
           keywordList.forEach(keyword => {
-            if(result.some(e => e.name === keyword.name)) {
-              result[result.findIndex(e => e.name === keyword.name)].value += keyword.value; 
-            }
-            else {
-              result.push(keyword); 
-            }
+            if(result.some(e => e.name === keyword.name)) result[result.findIndex(e => e.name === keyword.name)].value += keyword.value; 
+            else result.push(keyword); 
           });
         }); 
-        result.sort(this.sortByValue); 
-        result.forEach(keyword => {
-          console.log(keyword.name + " Value: " + keyword.value); 
-        }); 
+        if(normalize) result = this.normalizeByValue(result); 
+        else result.sort(this.sortByValue); 
+        var dataHandle = chartName + "Data"; 
+        var optionHandle = chartName + "Options";
+        var newData = [{data: []}]; 
+        var newOptions = JSON.parse(JSON.stringify(this[optionHandle]));
+        for(var i = result.length -1; i >= result.length - 1 - this.showMaxChart; i--) {
+          newData[0].data.push(result[i].value); 
+          newOptions.xaxis.categories.push(result[i].name); 
+        }
+        this[dataHandle] = newData; 
+        this[optionHandle] = newOptions;
       }, 
       analyzeKeywordProfit(attribute) {
         var result = []; 
