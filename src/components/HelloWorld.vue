@@ -197,18 +197,7 @@
             else result.push(value); 
           });
         }); 
-        if(normalize) result = this.normalizeByValue(result); 
-        else result.sort(this.sortByValue); 
-        var dataHandle = chartName + "Data"; 
-        var optionHandle = chartName + "Options";
-        var newData = [{data: []}]; 
-        var newOptions = JSON.parse(JSON.stringify(this[optionHandle]));
-        for(var i = result.length -1; i >= result.length - 1 - this.showMaxChart; i--) {
-          newData[0].data.push(result[i].value); 
-          newOptions.xaxis.categories.push(result[i].name); 
-        }
-        this[dataHandle] = newData; 
-        this[optionHandle] = newOptions; 
+        this.updateValueGraph(result, normalize, chartName); 
       }, 
       analyzeKeywords(attribute, chartName, normalize = true) {
         var result = []; 
@@ -225,18 +214,7 @@
             else result.push(keyword); 
           });
         }); 
-        if(normalize) result = this.normalizeByValue(result); 
-        else result.sort(this.sortByValue); 
-        var dataHandle = chartName + "Data"; 
-        var optionHandle = chartName + "Options";
-        var newData = [{data: []}]; 
-        var newOptions = JSON.parse(JSON.stringify(this[optionHandle]));
-        for(var i = result.length -1; i >= result.length - 1 - this.showMaxChart; i--) {
-          newData[0].data.push(result[i].value); 
-          newOptions.xaxis.categories.push(result[i].name); 
-        }
-        this[dataHandle] = newData; 
-        this[optionHandle] = newOptions;
+        this.updateValueGraph(result, normalize, chartName); 
       }, 
       analyzeKeywordProfit(attribute) {
         var result = []; 
@@ -308,7 +286,21 @@
           element.value = (element.value * 100 / max).toFixed(this.maxDecimals); 
         }); 
         return array; 
-      }
+      }, 
+      updateValueGraph(result, normalize, chartName) {
+        if(normalize) result = this.normalizeByValue(result); 
+        else result.sort(this.sortByValue); 
+        var dataHandle = chartName + "Data"; 
+        var optionHandle = chartName + "Options";
+        var newData = [{data: []}]; 
+        var newOptions = JSON.parse(JSON.stringify(this[optionHandle]));
+        for(var i = result.length -1; i >= result.length - 1 - this.showMaxChart; i--) {
+          newData[0].data.push(result[i].value); 
+          newOptions.xaxis.categories.push(result[i].name); 
+        }
+        this[dataHandle] = newData; 
+        this[optionHandle] = newOptions;
+      } 
     }
   }
 </script>
