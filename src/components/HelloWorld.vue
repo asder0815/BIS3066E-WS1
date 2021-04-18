@@ -7,8 +7,8 @@
         <v-checkbox v-model="onlyBlockbusters" :label="`Only evaluate blockbusters: ${onlyBlockbusters.toString()}`" :disabled=dataCleaned></v-checkbox>
       </v-col>  
     </v-row>
-    <v-btn elevation="2" @click="analyzeActors" :disabled=!dataCleaned>Actors</v-btn>
-    <v-btn elevation="2" @click="analyzeTextAtrribute(['director_name'])" :disabled=!dataCleaned>Directors</v-btn>
+    <v-btn elevation="2" @click="analyzeTextAtrribute(['actor_1_name','actor_2_name','actor_3_name'], 'actorValueChart')" :disabled=!dataCleaned>Actor Values</v-btn>
+    <v-btn elevation="2" @click="analyzeTextAtrribute(['director_name'], 'directorValueChart')" :disabled=!dataCleaned>Director Values</v-btn>
     <v-btn elevation="2" @click="analyzeKeywords('genres')" :disabled=!dataCleaned>Genres</v-btn>
     <v-btn elevation="2" @click="analyzeKeywords('plot_keywords')" :disabled=!dataCleaned>Plot</v-btn>
     <v-btn elevation="2" @click="analyzeKeywordProfit('genres')" :disabled=!dataCleaned>Genres Profit</v-btn>
@@ -29,10 +29,16 @@
       auto-draw
     ></v-sparkline>
 
+    <apexchart ref="actorValueChart" type="bar" height="350" :options="actorValueChartOptions" :series="actorValueChartData"></apexchart>
+    <apexchart ref="directorValueChart" type="bar" height="350" :options="directorValueChartOptions" :series="directorValueChartData"></apexchart>
+
   </v-container>
 </template>
 
 <script>
+  import Vue from 'vue'; 
+  import VueApexCharts from 'vue-apexcharts'; 
+  Vue.component('apexchart', VueApexCharts); 
   const gradients = [['#222'],['#42b3f4'],['red', 'orange', 'yellow'],['purple', 'violet'],['#00c6ff', '#F0F', '#FF0'],['#f72047', '#ffd200', '#1feaea']]; 
   export default {
     name: 'HelloWorld',
@@ -48,10 +54,11 @@
       blockbusterGross: 100000000, 
       maxBudget: 350000000,
       maxGrossing: 800000000,
-      maxProfitMargin: 25, 
+      maxProfitMargin: 50, 
       minProfitMargin: 0.01,
       profitMarginTarget: 2, 
       budgetInterval: 25000000,
+      showMaxChart: 20, 
       graphValue: [0, 2, 5, 9, 5, 10, 3, 5, 0, 0, 1, 8, 2, 9, 0], 
       graphData: {
         width: 2,
@@ -64,6 +71,22 @@
         fill: false,
         type: 'trend',
         autoLineWidth: false
+      }, 
+      actorValueChartData: [{ data: [] }],
+      actorValueChartOptions: {
+        chart: { type: 'bar', height: 350 },
+        plotOptions: { bar: { borderRadius: 4 } },
+        dataLabels: { enabled: false },
+        title: { text: 'Actor Value' },
+        xaxis: { categories: [] }
+      }, 
+      directorValueChartData: [{ data: [] }],
+      directorValueChartOptions: {
+        chart: { type: 'bar', height: 350 },
+        plotOptions: { bar: { borderRadius: 4 } },
+        dataLabels: { enabled: false },
+        title: { text: 'Director Value' },
+        xaxis: { categories: [] }
       }
     }),
     methods: {
@@ -142,7 +165,7 @@
         });
         return result; 
       },
-      analyzeTextAtrribute(attributeList) {
+      analyzeTextAtrribute(attributeList, chartName) {
         var result = []; 
         var baseGross = this.onlyBlockbusters ? this.blockbusterGross : 1; 
         this.cleanedData.forEach(movie => {
@@ -163,28 +186,16 @@
         result.forEach(value => {
           console.log(value.name + " Value: " + value.value); 
         }); 
-      }, 
-      analyzeActors() {
-        var result = []; 
-        var baseGross = this.onlyBlockbusters ? this.blockbusterGross : 1; 
-        this.cleanedData.forEach(movie => {
-          var actorList = []; 
-          ["actor_1_name", "actor_2_name", "actor_3_name"].forEach(actorNr => {
-            if(movie[actorNr] != "") actorList.push({name: movie[actorNr], value: movie.gross / baseGross}); 
-          }); 
-          actorList.forEach(actor => {
-            if(result.some(e => e.name === actor.name)) {
-              result[result.findIndex(e => e.name === actor.name)].value += actor.value; 
-            }
-            else {
-              result.push(actor); 
-            }
-          });
-        }); 
-        result.sort(this.sortByValue); 
-        result.forEach(actor => {
-          console.log(actor.name + " Value: " + actor.value); 
-        }); 
+        var dataHandle = chartName + "Data"; console.log(dataHandle); console.log(this[dataHandle]); 
+        var optionHandle = chartName + "Options"; console.log(optionHandle); console.log(this[optionHandle]); 
+        var newData = [{data: []}]; 
+        var newOptions = JSON.parse(JSON.stringify(this[optionHandle]));
+        for(var i = result.length -1; i >= result.length - 1 - this.showMaxChart; i--) {
+          newData[0].data.push(result[i].value); 
+          newOptions.xaxis.categories.push(result[i].name); 
+        }
+        this[dataHandle] = newData; 
+        this[optionHandle] = newOptions; 
       }, 
       analyzeKeywords(attribute) {
         var result = []; 
