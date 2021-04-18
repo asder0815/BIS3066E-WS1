@@ -11,8 +11,8 @@
     <v-btn elevation="2" @click="analyzeTextAtrribute(['director_name'], 'directorValueChart')" :disabled=!dataCleaned>Director Values</v-btn>
     <v-btn elevation="2" @click="analyzeKeywords('genres', 'genreValueChart')" :disabled=!dataCleaned>Genres</v-btn>
     <v-btn elevation="2" @click="analyzeKeywords('plot_keywords', 'plotValueChart')" :disabled=!dataCleaned>Plot</v-btn>
-    <v-btn elevation="2" @click="analyzeKeywordProfit('genres')" :disabled=!dataCleaned>Genres Profit</v-btn>
-    <v-btn elevation="2" @click="analyzeKeywordProfit('plot_keywords')" :disabled=!dataCleaned>Plot Profit</v-btn>
+    <v-btn elevation="2" @click="analyzeKeywordProfit('genres', 'genreProfitChart')" :disabled=!dataCleaned>Genres Profit</v-btn>
+    <v-btn elevation="2" @click="analyzeKeywordProfit('plot_keywords', 'plotProfitChart')" :disabled=!dataCleaned>Plot Profit</v-btn>
     <v-btn elevation="2" @click="analyzeDiminishingReturns()" :disabled=!dataCleaned>Update Graph</v-btn>
 
     <v-sparkline
@@ -33,6 +33,8 @@
     <apexchart ref="directorValueChart" type="bar" height="350" :options="directorValueChartOptions" :series="directorValueChartData"></apexchart>
     <apexchart ref="genreValueChart" type="bar" height="350" :options="genreValueChartOptions" :series="genreValueChartData"></apexchart>
     <apexchart ref="plotValueChart" type="bar" height="350" :options="plotValueChartOptions" :series="plotValueChartData"></apexchart>
+    <apexchart ref="genreProfitChart" type="bar" height="350" :options="genreProfitChartOptions" :series="genreProfitChartData"></apexchart>
+    <apexchart ref="plotProfitChart" type="bar" height="350" :options="plotProfitChartOptions" :series="plotProfitChartData"></apexchart>
 
   </v-container>
 </template>
@@ -105,6 +107,22 @@
         plotOptions: { bar: { borderRadius: 4 } },
         dataLabels: { enabled: false },
         title: { text: 'Plot Keyword Value' },
+        xaxis: { categories: [] }
+      }, 
+      genreProfitChartData: [{ data: [] }],
+      genreProfitChartOptions: {
+        chart: { type: 'bar', height: 350 },
+        plotOptions: { bar: { borderRadius: 4 } },
+        dataLabels: { enabled: false },
+        title: { text: 'Genre Profit Chance' },
+        xaxis: { categories: [] }
+      }, 
+      plotProfitChartData: [{ data: [] }],
+      plotProfitChartOptions: {
+        chart: { type: 'bar', height: 350 },
+        plotOptions: { bar: { borderRadius: 4 } },
+        dataLabels: { enabled: false },
+        title: { text: 'Plot Keyword Profit Chance' },
         xaxis: { categories: [] }
       }
     }),
@@ -216,7 +234,7 @@
         }); 
         this.updateValueGraph(result, normalize, chartName); 
       }, 
-      analyzeKeywordProfit(attribute) {
+      analyzeKeywordProfit(attribute, chartName) {
         var result = []; 
         this.cleanedData.forEach(movie => {
           var keywordList = []; 
@@ -242,10 +260,12 @@
             }
           });
         }); 
-        result.sort(this.sortByValue); 
         result.forEach(keyword => {
-          console.log(keyword.name + " has a " + keyword.value * 100 + "% chance to exceed a profit margin of " + this.profitMarginTarget + "with " + keyword.above + " values above and " + keyword.below + " values below"); 
+          if(keyword.value == Infinity) keyword.value = 0; 
+          keyword.value = (keyword.value * 100).toFixed(this.maxDecimals); 
+          console.log(keyword.name + " has a " + keyword.value + "% chance to exceed a profit margin of " + this.profitMarginTarget + "with " + keyword.above + " values above and " + keyword.below + " values below"); 
         }); 
+        this.updateValueGraph(result, false, chartName); 
       },
       analyzeDiminishingReturns() {
         var result = []; 
@@ -288,6 +308,7 @@
         return array; 
       }, 
       updateValueGraph(result, normalize, chartName) {
+        result = this.parseValues(result); 
         if(normalize) result = this.normalizeByValue(result); 
         else result.sort(this.sortByValue); 
         var dataHandle = chartName + "Data"; 
@@ -300,7 +321,13 @@
         }
         this[dataHandle] = newData; 
         this[optionHandle] = newOptions;
-      } 
+      }, 
+      parseValues(array) {
+        array.forEach(element => {
+          element.value = parseInt(element.value, 10); 
+        }); 
+        return array; 
+      }
     }
   }
 </script>
