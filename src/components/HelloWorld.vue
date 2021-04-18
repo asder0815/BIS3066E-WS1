@@ -138,68 +138,16 @@
     }),
     methods: {
       cleanData() {
-        var loopCounter = 0; 
-        var filteredCounter = 0; 
         var cleanStepOne = []; 
         this.movieData.forEach(movie => {
-          if(movie.name == "") {
-            if(this.fullReport) console.log("Filtered movie " + loopCounter + " due to no name."); 
-            filteredCounter++; 
-          } else if(movie.gross == "") {
-            if(this.fullReport) console.log("Filtered movie: " + movie.movie_title + " due to no grossing data.");
-            filteredCounter++;  
-          } else if(movie.budget == "") {
-            if(this.fullReport) console.log("Filtered movie: " + movie.movie_title + " due to no budget data.");
-            filteredCounter++;  
-          }
-          else {
-            cleanStepOne.push(movie); 
-          }
-          loopCounter++; 
+          if(this.movieValid(movie)) cleanStepOne.push(movie);  
         }); 
-        console.log("--- Finished step two of cleaning data ---");
-        console.log("Filtered out " + filteredCounter + " movies due to missing data.");
-        filteredCounter = 0; 
         var cleanStepTwo = []; 
         var linkSet = new Set(); 
         cleanStepOne.forEach(movie => {
-          if(movie.movie_imdb_link != "" && linkSet.size === linkSet.add(movie.movie_imdb_link).size) {
-            if(this.fullReport) console.log("Filtered out movie " + movie.movie_title + " due to duplicate IMBD link."); 
-            filteredCounter++; 
-          }
-          else if(movie.movie_title != "" && linkSet.size === linkSet.add(movie.movie_title).size) {
-            if(this.fullReport) console.log("Filtered out movie " + movie.movie_title + " due to duplicate title."); 
-            filteredCounter++;
-          }
-          else {
-            cleanStepTwo.push(movie); 
-          }
+          if(!(movie.movie_imdb_link != "" && linkSet.size === linkSet.add(movie.movie_imdb_link).size)
+           && !(movie.movie_title != "" && linkSet.size === linkSet.add(movie.movie_title).size)) cleanStepTwo.push(movie); 
         });
-        console.log("--- Finished step two of cleaning data ---");
-        console.log("Filtered out " + filteredCounter + " movies due to duplicate data.");  
-        var filteredCounterProfit = 0; 
-        var filteredCounterBudget = 0; 
-        var filteredCounterProfitMargin = 0; 
-        var cleanStepThree = []; 
-        cleanStepTwo.forEach(movie => {
-          if(movie.gross > this.maxGrossing) {
-            if(this.fullReport) console.log("Filtered out movie " + movie.movie_title + " due to unrealistic grossing."); 
-            filteredCounterProfit++;
-          } else if(movie.budget > this.maxBudget) {
-            if(this.fullReport) console.log("Filtered out movie " + movie.movie_title + " due to unrealistic budget."); 
-            filteredCounterBudget++;
-          } else if(movie.gross / movie.budget > this.maxProfitMargin || movie.gross / movie.budget < this.minProfitMargin) {
-            if(this.fullReport) console.log("Filtered out movie " + movie.movie_title + " due to unrealistic profit margins."); 
-            filteredCounterProfitMargin++;
-          } else {
-            cleanStepThree.push(movie); 
-          }
-        }); 
-        console.log("--- Finished step three of cleaning data ---");
-        console.log("Filtered out " + filteredCounterProfit + " movies due to unrealistic profit numbers.");
-        console.log("Filtered out " + filteredCounterBudget + " movies due to unrealistic budget numbers.");
-        console.log("Filtered out " + filteredCounterProfitMargin + " movies due to unrealistic profit margins.");
-        console.log("--- Finished cleaning data ---")
         this.cleanedData = this.onlyBlockbusters ? this.createBlockbusterList(cleanStepTwo) : cleanStepTwo; 
         this.dataCleaned = true; 
       }, 
