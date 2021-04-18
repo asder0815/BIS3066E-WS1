@@ -14,6 +14,7 @@
     <v-btn elevation="2" @click="analyzeKeywordProfit('genres', 'genreProfitChart')" :disabled=!dataCleaned>Genres Profit</v-btn>
     <v-btn elevation="2" @click="analyzeKeywordProfit('plot_keywords', 'plotProfitChart')" :disabled=!dataCleaned>Plot Profit</v-btn>
     <v-btn elevation="2" @click="analyzeDiminishingReturns()" :disabled=!dataCleaned>Update Graph</v-btn>
+    <v-btn elevation="2" @click="analyzeTextAtrributeAverageProfit(['actor_1_name','actor_2_name','actor_3_name'], 'actorProfitMarginChart')" :disabled=!dataCleaned>Actor Margins</v-btn>
 
     <v-sparkline
       :value="graphValue"
@@ -35,6 +36,7 @@
     <apexchart ref="plotValueChart" type="bar" height="350" :options="plotValueChartOptions" :series="plotValueChartData"></apexchart>
     <apexchart ref="genreProfitChart" type="bar" height="350" :options="genreProfitChartOptions" :series="genreProfitChartData"></apexchart>
     <apexchart ref="plotProfitChart" type="bar" height="350" :options="plotProfitChartOptions" :series="plotProfitChartData"></apexchart>
+    <apexchart ref="actorProfitMarginChart" type="bar" height="350" :options="actorProfitMarginChartOptions" :series="actorProfitMarginChartData"></apexchart>
 
   </v-container>
 </template>
@@ -82,7 +84,7 @@
         chart: { type: 'bar', height: 350 },
         plotOptions: { bar: { borderRadius: 4 } },
         dataLabels: { enabled: false },
-        title: { text: 'Actor Value' },
+        title: { text: 'Actor Value - What actors are starring in the most successful movies?' },
         xaxis: { categories: [] }
       }, 
       directorValueChartData: [{ data: [] }],
@@ -90,7 +92,7 @@
         chart: { type: 'bar', height: 350 },
         plotOptions: { bar: { borderRadius: 4 } },
         dataLabels: { enabled: false },
-        title: { text: 'Director Value' },
+        title: { text: 'Director Value- Which directors are directing the most successful movies?' },
         xaxis: { categories: [] }
       }, 
       genreValueChartData: [{ data: [] }],
@@ -98,7 +100,7 @@
         chart: { type: 'bar', height: 350 },
         plotOptions: { bar: { borderRadius: 4 } },
         dataLabels: { enabled: false },
-        title: { text: 'Genre Value' },
+        title: { text: 'Genre Value - What genres are the most successful movies?' },
         xaxis: { categories: [] }
       }, 
       plotValueChartData: [{ data: [] }],
@@ -106,7 +108,7 @@
         chart: { type: 'bar', height: 350 },
         plotOptions: { bar: { borderRadius: 4 } },
         dataLabels: { enabled: false },
-        title: { text: 'Plot Keyword Value' },
+        title: { text: 'Plot Keyword Value - What plot do the most successful movies have?' },
         xaxis: { categories: [] }
       }, 
       genreProfitChartData: [{ data: [] }],
@@ -114,7 +116,7 @@
         chart: { type: 'bar', height: 350 },
         plotOptions: { bar: { borderRadius: 4 } },
         dataLabels: { enabled: false },
-        title: { text: 'Genre Profit Chance' },
+        title: { text: 'Genre Profit Chance - What chance to break the target profit margin does each genre have?' },
         xaxis: { categories: [] }
       }, 
       plotProfitChartData: [{ data: [] }],
@@ -122,7 +124,15 @@
         chart: { type: 'bar', height: 350 },
         plotOptions: { bar: { borderRadius: 4 } },
         dataLabels: { enabled: false },
-        title: { text: 'Plot Keyword Profit Chance' },
+        title: { text: 'Plot Keyword Profit Chance - What chance to break the target profit margin does each plot have?' },
+        xaxis: { categories: [] }
+      },
+      actorProfitMarginChartData: [{ data: [] }],
+      actorProfitMarginChartOptions: {
+        chart: { type: 'bar', height: 350 },
+        plotOptions: { bar: { borderRadius: 4 } },
+        dataLabels: { enabled: false },
+        title: { text: 'Actor Profit Margin - What average profit margin does a movie with a specific actor have?' },
         xaxis: { categories: [] }
       }
     }),
@@ -293,6 +303,27 @@
         console.log(graphValues); 
         this.graphValue = graphValues; 
       },
+      analyzeTextAtrributeAverageProfit(attributeList, chartName) {
+        var result = []; 
+        this.cleanedData.forEach(movie => {
+          var valueList = []; 
+          attributeList.forEach(valueNr => {
+            if(movie[valueNr] != "") valueList.push({name: movie[valueNr], sum: movie.gross / movie.budget, amount: 1, value: movie.gross / movie.budget}); 
+          }); 
+          valueList.forEach(value => {
+            if(result.some(e => e.name === value.name)) {
+              var target = result[result.findIndex(e => e.name === value.name)]; 
+              target.sum += value.sum; 
+              target.amount++; 
+              target.value = target.sum / target.amount; 
+            }
+            else result.push(value); 
+          });
+        }); 
+        result.sort(this.sortByValue); 
+        console.log(result); 
+        this.updateValueGraph(result, false, chartName); 
+      }, 
       sortByValue(a,b) {
         return a.value === b.value ? 0 : a.value > b.value ? 1 : -1; 
       },
@@ -327,6 +358,11 @@
           element.value = parseInt(element.value, 10); 
         }); 
         return array; 
+      }, 
+      movieValid(movie) {
+        return movie.name != "" && movie.budget != "" && movie.gross != "" 
+          && movie.gross <= this.maxGrossing && movie.budget <= this.maxBudget
+          && movie.gross / movie.budget <= this.maxProfitMargin && movie.gross / movie.budget >= this.minProfitMargin
       }
     }
   }
