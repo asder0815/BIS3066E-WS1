@@ -2,12 +2,31 @@
   <v-container>
     <v-row class="text-center">
       <v-col cols="12">
+        <v-row>
+          <v-col> <v-text-field v-model="blockbusterGross" label="Blockbuster Grossing" outlined :disabled=dataCleaned></v-text-field> </v-col>
+          <v-col> <v-text-field v-model="maxBudget" label="Maximum Budget" outlined :disabled=dataCleaned></v-text-field> </v-col>
+          <v-col> <v-text-field v-model="maxGrossing" label="Maximum Grossing" outlined :disabled=dataCleaned></v-text-field> </v-col>
+          <v-col> <v-text-field v-model="minProfitMargin" label="Minimum Profit Margin" outlined :disabled=dataCleaned></v-text-field> </v-col>
+          <v-col> <v-text-field v-model="maxProfitMargin" label="Maximum Profit Margin" outlined :disabled=dataCleaned></v-text-field> </v-col>
+        </v-row>
         <v-btn elevation="2" @click="cleanData" :disabled=dataCleaned>Clean Data</v-btn>
-        <v-checkbox v-model="fullReport" :label="`Full report: ${fullReport.toString()}`" :disabled=dataCleaned></v-checkbox>
-        <v-checkbox v-model="onlyBlockbusters" :label="`Only evaluate blockbusters: ${onlyBlockbusters.toString()}`" :disabled=dataCleaned></v-checkbox>
       </v-col>  
     </v-row>
-    <v-btn elevation="2" @click="analyzeTextAtrribute(['actor_1_name','actor_2_name','actor_3_name'], 'actorValueChart')" :disabled=!dataCleaned>Actor Values</v-btn>
+
+    <v-row>
+      <v-col> <v-text-field v-model="profitMarginTarget" label="Target Profit Margin" outlined :disabled=dataAnalyzed></v-text-field> </v-col>
+      <v-col> <v-text-field v-model="budgetInterval" label="Budget Intervals" outlined :disabled=dataAnalyzed></v-text-field> </v-col>
+      <v-col> <v-text-field v-model="showMaxChart" label="Show Top" outlined :disabled=dataAnalyzed></v-text-field> </v-col>
+      <v-col> <v-text-field v-model="maxDecimals" label="Max Decimals" outlined :disabled=dataAnalyzed></v-text-field> </v-col>
+      <v-col> <v-text-field v-model="minAmountForAverage" label="Minumum amount of data sets for average" outlined :disabled=dataAnalyzed></v-text-field> </v-col>
+    </v-row>
+    <v-row class="text-center">
+      <v-col cols="12">
+        <v-btn elevation="2" @click="analyzeData" :disabled='!dataCleaned || dataAnalyzed'>Analyze Data</v-btn>
+      </v-col>
+    </v-row>
+
+    <!--v-btn elevation="2" @click="analyzeTextAtrribute(['actor_1_name','actor_2_name','actor_3_name'], 'actorValueChart')" :disabled=!dataCleaned>Actor Values</v-btn>
     <v-btn elevation="2" @click="analyzeTextAtrribute(['director_name'], 'directorValueChart')" :disabled=!dataCleaned>Director Values</v-btn>
     <v-btn elevation="2" @click="analyzeKeywords('genres', 'genreValueChart')" :disabled=!dataCleaned>Genres</v-btn>
     <v-btn elevation="2" @click="analyzeKeywords('plot_keywords', 'plotValueChart')" :disabled=!dataCleaned>Plot</v-btn>
@@ -15,21 +34,7 @@
     <v-btn elevation="2" @click="analyzeKeywordProfit('plot_keywords', 'plotProfitChart')" :disabled=!dataCleaned>Plot Profit</v-btn>
     <v-btn elevation="2" @click="analyzeDiminishingReturns('revenueProfitGraph')" :disabled=!dataCleaned>Update Graph</v-btn>
     <v-btn elevation="2" @click="analyzeTextAtrributeAverageProfit(['actor_1_name','actor_2_name','actor_3_name'], 'actorProfitMarginChart')" :disabled=!dataCleaned>Actor Margins</v-btn>
-    <v-btn elevation="2" @click="analyzeTextAtrributeAverageProfit(['director_name'], 'directorProfitMarginChart')" :disabled=!dataCleaned>Director Margins</v-btn>
-
-    <!--v-sparkline
-      :value="graphValue"
-      :gradient="graphData.gradient"
-      :smooth="graphData.radius || false"
-      :padding="graphData.padding"
-      :line-width="graphData.width"
-      :stroke-linecap="graphData.lineCap"
-      :gradient-direction="graphData.gradientDirection"
-      :fill="graphData.fill"
-      :type="graphData.type"
-      :auto-line-width="graphData.autoLineWidth"
-      auto-draw
-    ></v-sparkline-->
+    <v-btn elevation="2" @click="analyzeTextAtrributeAverageProfit(['director_name'], 'directorProfitMarginChart')" :disabled=!dataCleaned>Director Margins</v-btn-->
 
     <apexchart type="line" height="350" :options="revenueProfitGraphOptions" :series="revenueProfitGraphData"></apexchart>
     <apexchart ref="actorValueChart" type="bar" height="350" :options="actorValueChartOptions" :series="actorValueChartData"></apexchart>
@@ -57,6 +62,7 @@
     data: () => ({
       cleanedData: [], 
       dataCleaned: false,
+      dataAnalyzed: false, 
       blockbusters: [], 
       fullReport: false, 
       onlyBlockbusters: true, 
@@ -83,7 +89,7 @@
         type: 'trend',
         autoLineWidth: false
       }, 
-      revenueProfitGraphData: [{ data: [] }],
+      revenueProfitGraphData: [{ name: 'Average revenue', data: [] }],
       revenueProfitGraphOptions: {
         chart: { height: 350, type: 'line', zoom: { enabled: false } },
         dataLabels: { enabled: false },
@@ -92,7 +98,7 @@
         grid: { row: { colors: ['#f3f3f3', 'transparent'], opacity: 0.5 }, },
         xaxis: { categories: [] }
       },
-      actorValueChartData: [{ data: [] }],
+      actorValueChartData: [{ name: 'Weighted actor value', data: [] }],
       actorValueChartOptions: {
         chart: { type: 'bar', height: 350 },
         plotOptions: { bar: { borderRadius: 4 } },
@@ -100,7 +106,7 @@
         title: { text: 'Actor Value - What actors are starring in the most successful movies?' },
         xaxis: { categories: [] }
       }, 
-      directorValueChartData: [{ data: [] }],
+      directorValueChartData: [{ name: 'Weighted director value', data: [] }],
       directorValueChartOptions: {
         chart: { type: 'bar', height: 350 },
         plotOptions: { bar: { borderRadius: 4 } },
@@ -108,7 +114,7 @@
         title: { text: 'Director Value- Which directors are directing the most successful movies?' },
         xaxis: { categories: [] }
       }, 
-      genreValueChartData: [{ data: [] }],
+      genreValueChartData: [{ name: 'Weighted genre value', data: [] }],
       genreValueChartOptions: {
         chart: { type: 'bar', height: 350 },
         plotOptions: { bar: { borderRadius: 4 } },
@@ -116,7 +122,7 @@
         title: { text: 'Genre Value - What genres are the most successful movies?' },
         xaxis: { categories: [] }
       }, 
-      plotValueChartData: [{ data: [] }],
+      plotValueChartData: [{ name: 'Weighted plot value', data: [] }],
       plotValueChartOptions: {
         chart: { type: 'bar', height: 350 },
         plotOptions: { bar: { borderRadius: 4 } },
@@ -124,7 +130,7 @@
         title: { text: 'Plot Keyword Value - What plot do the most successful movies have?' },
         xaxis: { categories: [] }
       }, 
-      genreProfitChartData: [{ data: [] }],
+      genreProfitChartData: [{ name: 'Chance to surpass profit margin', data: [] }],
       genreProfitChartOptions: {
         chart: { type: 'bar', height: 350 },
         plotOptions: { bar: { borderRadius: 4 } },
@@ -132,7 +138,7 @@
         title: { text: 'Genre Profit Chance - What chance to break the target profit margin does each genre have?' },
         xaxis: { categories: [] }
       }, 
-      plotProfitChartData: [{ data: [] }],
+      plotProfitChartData: [{ name: 'Chance to surpass profit margin', data: [] }],
       plotProfitChartOptions: {
         chart: { type: 'bar', height: 350 },
         plotOptions: { bar: { borderRadius: 4 } },
@@ -140,7 +146,7 @@
         title: { text: 'Plot Keyword Profit Chance - What chance to break the target profit margin does each plot have?' },
         xaxis: { categories: [] }
       },
-      actorProfitMarginChartData: [{ data: [] }],
+      actorProfitMarginChartData: [{ name: 'Chance to surpass profit margin', data: [] }],
       actorProfitMarginChartOptions: {
         chart: { type: 'bar', height: 350 },
         plotOptions: { bar: { borderRadius: 4 } },
@@ -148,7 +154,7 @@
         title: { text: 'Actor Profit Margin - What average profit margin does a movie with a specific actor have?' },
         xaxis: { categories: [] }
       },
-      directorProfitMarginChartData: [{ data: [] }],
+      directorProfitMarginChartData: [{ name: 'Chance to surpass profit margin', data: [] }],
       directorProfitMarginChartOptions: {
         chart: { type: 'bar', height: 350 },
         plotOptions: { bar: { borderRadius: 4 } },
@@ -311,7 +317,7 @@
         else attribute === 'value' ? result.sort(this.sortByValue) : result.sort(this.sortByInterval); 
         var dataHandle = chartName + "Data"; 
         var optionHandle = chartName + "Options";
-        var newData = [{data: []}]; 
+        var newData = JSON.parse(JSON.stringify(this[dataHandle]));
         var newOptions = JSON.parse(JSON.stringify(this[optionHandle]));
         for(var i = result.length -1; i >= this.clamp(result.length - 1 - this.showMaxChart, 0); i--) {
           newData[0].data.push(result[i].value); 
@@ -345,6 +351,18 @@
         array.forEach(element => {
           element[attribute] = element[attribute].toFixed(decimals); 
         });
+      }, 
+      analyzeData() {
+        this.dataAnalyzed = true; 
+        this.analyzeTextAtrribute(['actor_1_name','actor_2_name','actor_3_name'], 'actorValueChart'); 
+        this.analyzeTextAtrribute(['director_name'], 'directorValueChart'); 
+        this.analyzeKeywords('genres', 'genreValueChart'); 
+        this.analyzeKeywords('plot_keywords', 'plotValueChart'); 
+        this.analyzeKeywordProfit('genres', 'genreProfitChart'); 
+        this.analyzeKeywordProfit('plot_keywords', 'plotProfitChart'); 
+        this.analyzeDiminishingReturns('revenueProfitGraph'); 
+        this.analyzeTextAtrributeAverageProfit(['actor_1_name','actor_2_name','actor_3_name'], 'actorProfitMarginChart'); 
+        this.analyzeTextAtrributeAverageProfit(['director_name'], 'directorProfitMarginChart'); 
       }
     }
   }
