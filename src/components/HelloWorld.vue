@@ -13,10 +13,11 @@
     <v-btn elevation="2" @click="analyzeKeywords('plot_keywords', 'plotValueChart')" :disabled=!dataCleaned>Plot</v-btn>
     <v-btn elevation="2" @click="analyzeKeywordProfit('genres', 'genreProfitChart')" :disabled=!dataCleaned>Genres Profit</v-btn>
     <v-btn elevation="2" @click="analyzeKeywordProfit('plot_keywords', 'plotProfitChart')" :disabled=!dataCleaned>Plot Profit</v-btn>
-    <v-btn elevation="2" @click="analyzeDiminishingReturns()" :disabled=!dataCleaned>Update Graph</v-btn>
+    <v-btn elevation="2" @click="analyzeDiminishingReturns('revenueProfitGraph')" :disabled=!dataCleaned>Update Graph</v-btn>
     <v-btn elevation="2" @click="analyzeTextAtrributeAverageProfit(['actor_1_name','actor_2_name','actor_3_name'], 'actorProfitMarginChart')" :disabled=!dataCleaned>Actor Margins</v-btn>
+    <v-btn elevation="2" @click="analyzeTextAtrributeAverageProfit(['director_name'], 'directorProfitMarginChart')" :disabled=!dataCleaned>Director Margins</v-btn>
 
-    <v-sparkline
+    <!--v-sparkline
       :value="graphValue"
       :gradient="graphData.gradient"
       :smooth="graphData.radius || false"
@@ -28,8 +29,9 @@
       :type="graphData.type"
       :auto-line-width="graphData.autoLineWidth"
       auto-draw
-    ></v-sparkline>
+    ></v-sparkline-->
 
+    <apexchart type="line" height="350" :options="revenueProfitGraphOptions" :series="revenueProfitGraphData"></apexchart>
     <apexchart ref="actorValueChart" type="bar" height="350" :options="actorValueChartOptions" :series="actorValueChartData"></apexchart>
     <apexchart ref="directorValueChart" type="bar" height="350" :options="directorValueChartOptions" :series="directorValueChartData"></apexchart>
     <apexchart ref="genreValueChart" type="bar" height="350" :options="genreValueChartOptions" :series="genreValueChartData"></apexchart>
@@ -37,6 +39,7 @@
     <apexchart ref="genreProfitChart" type="bar" height="350" :options="genreProfitChartOptions" :series="genreProfitChartData"></apexchart>
     <apexchart ref="plotProfitChart" type="bar" height="350" :options="plotProfitChartOptions" :series="plotProfitChartData"></apexchart>
     <apexchart ref="actorProfitMarginChart" type="bar" height="350" :options="actorProfitMarginChartOptions" :series="actorProfitMarginChartData"></apexchart>
+    <apexchart ref="directorProfitMarginChart" type="bar" height="350" :options="directorProfitMarginChartOptions" :series="directorProfitMarginChartData"></apexchart>
 
   </v-container>
 </template>
@@ -80,6 +83,15 @@
         type: 'trend',
         autoLineWidth: false
       }, 
+      revenueProfitGraphData: [{ data: [] }],
+      revenueProfitGraphOptions: {
+        chart: { height: 350, type: 'line', zoom: { enabled: false } },
+        dataLabels: { enabled: false },
+        stroke: { curve: 'straight' },
+        title: { text: 'Diminishing returns of budget', align: 'left' },
+        grid: { row: { colors: ['#f3f3f3', 'transparent'], opacity: 0.5 }, },
+        xaxis: { categories: [] }
+      },
       actorValueChartData: [{ data: [] }],
       actorValueChartOptions: {
         chart: { type: 'bar', height: 350 },
@@ -134,6 +146,14 @@
         plotOptions: { bar: { borderRadius: 4 } },
         dataLabels: { enabled: false },
         title: { text: 'Actor Profit Margin - What average profit margin does a movie with a specific actor have?' },
+        xaxis: { categories: [] }
+      },
+      directorProfitMarginChartData: [{ data: [] }],
+      directorProfitMarginChartOptions: {
+        chart: { type: 'bar', height: 350 },
+        plotOptions: { bar: { borderRadius: 4 } },
+        dataLabels: { enabled: false },
+        title: { text: 'Director Profit Margin - What average profit margin does a movie with a specific director have?' },
         xaxis: { categories: [] }
       }
     }),
@@ -229,31 +249,27 @@
         result = this.filterAmount(result); 
         this.updateValueGraph(result, false, chartName); 
       },
-      analyzeDiminishingReturns() {
+      analyzeDiminishingReturns(chartName) {
         var result = []; 
         this.cleanedData.forEach(movie => {
           if(result.some(e => e.interval === Math.floor(movie.budget / this.budgetInterval))) {
             var target = result[result.findIndex(e => e.interval === Math.floor(movie.budget / this.budgetInterval))]; 
             target.amount++; 
             target.sum += movie.gross; 
-            target.average = target.sum / target.amount; 
+            target.value = target.sum / target.amount; 
           }
           else {
             result.push({
+              name: Math.floor(movie.budget / this.budgetInterval), 
               interval: Math.floor(movie.budget / this.budgetInterval), 
               amount: 1, 
               sum: movie.gross, 
-              average: movie.gross
+              value: movie.gross
             }); 
           }
-        }); 
-        console.log(result);
-        var graphValues = []; 
-        result.sort(this.sortByInterval).forEach(res => {
-          if(res.interval <= Math.floor(this.maxBudget / this.budgetInterval)) graphValues.push(res.average); 
-        }); 
-        console.log(graphValues); 
-        this.graphValue = graphValues; 
+        });  
+        this.fixAttributeToDecimals(result, 'value', 2); 
+        this.updateValueGraph(result, false, chartName, true);  
       },
       analyzeTextAtrributeAverageProfit(attributeList, chartName) {
         var result = []; 
@@ -279,7 +295,7 @@
         return a.value === b.value ? 0 : a.value > b.value ? 1 : -1; 
       },
       sortByInterval(a,b) {
-        return a.interval === b.interval ? 0 : a.interval > b.interval ? 1 : -1; 
+        return a.interval === b.interval ? 0 : a.interval > b.interval ? -1 : 1; 
       },
       normalizeByValue(array) {
         array.sort(this.sortByValue); 
@@ -289,10 +305,10 @@
         }); 
         return array; 
       }, 
-      updateValueGraph(result, normalize, chartName) {
-        result = this.parseValues(result); 
+      updateValueGraph(result, normalize, chartName, attribute = 'value') {
+        result = this.parseValues(result, attribute); 
         if(normalize) result = this.normalizeByValue(result); 
-        else result.sort(this.sortByValue); 
+        else attribute === 'value' ? result.sort(this.sortByValue) : result.sort(this.sortByInterval); 
         var dataHandle = chartName + "Data"; 
         var optionHandle = chartName + "Options";
         var newData = [{data: []}]; 
@@ -304,9 +320,9 @@
         this[dataHandle] = newData; 
         this[optionHandle] = newOptions;
       }, 
-      parseValues(array) {
+      parseValues(array, attribute) {
         array.forEach(element => {
-          element.value = parseInt(element.value, 10); 
+          element[attribute] = parseInt(element[attribute], 10); 
         }); 
         return array; 
       }, 
@@ -324,6 +340,11 @@
       }, 
       clamp(value, min, max) {
         return value <= min ? min : value >= max ? max : value;
+      }, 
+      fixAttributeToDecimals(array, attribute, decimals) {
+        array.forEach(element => {
+          element[attribute] = element[attribute].toFixed(decimals); 
+        });
       }
     }
   }
