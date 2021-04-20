@@ -89,7 +89,7 @@
         type: 'trend',
         autoLineWidth: false
       }, 
-      revenueProfitGraphData: [{ name: 'Average revenue', data: [] }],
+      revenueProfitGraphData: [{ name: 'Average revenue', data: [] }, { name: 'Average profit', data: [] }],
       revenueProfitGraphOptions: {
         chart: { height: 350, type: 'line', zoom: { enabled: false } },
         dataLabels: { enabled: false },
@@ -263,6 +263,8 @@
             target.amount++; 
             target.sum += movie.gross; 
             target.value = target.sum / target.amount; 
+            target.sumProfit += movie.gross - movie.budget; 
+            target.valueProfit = target.sumProfit / target.amount; 
           }
           else {
             result.push({
@@ -270,12 +272,16 @@
               interval: Math.floor(movie.budget / this.budgetInterval), 
               amount: 1, 
               sum: movie.gross, 
-              value: movie.gross
+              value: movie.gross, 
+              sumProfit: movie.gross - movie.budget, 
+              valueProfit: movie.gross - movie.budget
             }); 
           }
         });  
         this.fixAttributeToDecimals(result, 'value', 2); 
+        this.fixAttributeToDecimals(result, 'valueProfit', 2); 
         this.updateValueGraph(result, false, chartName, true);  
+        this.updateValueGraph(result, false, chartName, true, 1, true, 'valueProfit');  
       },
       analyzeTextAtrributeAverageProfit(attributeList, chartName) {
         var result = []; 
@@ -311,7 +317,7 @@
         }); 
         return array; 
       }, 
-      updateValueGraph(result, normalize, chartName, attribute = 'value') {
+      updateValueGraph(result, normalize, chartName, attribute = 'value', dataSet = 0, custom = false, customAttribute = '') {
         result = this.parseValues(result, attribute); 
         if(normalize) result = this.normalizeByValue(result); 
         else attribute === 'value' ? result.sort(this.sortByValue) : result.sort(this.sortByInterval); 
@@ -320,7 +326,8 @@
         var newData = JSON.parse(JSON.stringify(this[dataHandle]));
         var newOptions = JSON.parse(JSON.stringify(this[optionHandle]));
         for(var i = result.length -1; i >= this.clamp(result.length - 1 - this.showMaxChart, 0); i--) {
-          newData[0].data.push(result[i].value); 
+          if(!custom) newData[dataSet].data.push(result[i].value); 
+          else newData[dataSet].data.push(result[i][customAttribute]);
           newOptions.xaxis.categories.push(result[i].name); 
         }
         this[dataHandle] = newData; 
