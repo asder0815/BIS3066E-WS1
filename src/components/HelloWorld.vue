@@ -244,7 +244,6 @@
         result.forEach(keyword => {
           if(keyword.value == Infinity) keyword.value = 0; 
           keyword.value = (keyword.value * 100).toFixed(this.maxDecimals); 
-          console.log(keyword.name + " has a " + keyword.value + "% chance to exceed a profit margin of " + this.profitMarginTarget + "with " + keyword.above + " values above and " + keyword.below + " values below"); 
         }); 
         result = this.filterAmount(result); 
         this.updateValueGraph(result, false, chartName); 
