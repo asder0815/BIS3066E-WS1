@@ -272,6 +272,9 @@
             }); 
           }
         });  
+        result.forEach(element => {
+          element.name = element.interval * this.budgetInterval; 
+        }); 
         this.fixAttributeToDecimals(result, 'value', 2); 
         this.fixAttributeToDecimals(result, 'valueProfit', 2); 
         this.updateValueGraph(result, false, chartName, true);  
