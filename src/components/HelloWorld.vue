@@ -6,8 +6,11 @@
           <v-col> <v-text-field v-model="blockbusterGross" label="Blockbuster Grossing" outlined :disabled=dataCleaned></v-text-field> </v-col>
           <v-col> <v-text-field v-model="maxBudget" label="Maximum Budget" outlined :disabled=dataCleaned></v-text-field> </v-col>
           <v-col> <v-text-field v-model="maxGrossing" label="Maximum Grossing" outlined :disabled=dataCleaned></v-text-field> </v-col>
+        </v-row>
+        <v-row>
           <v-col> <v-text-field v-model="minProfitMargin" label="Minimum Profit Margin" outlined :disabled=dataCleaned></v-text-field> </v-col>
           <v-col> <v-text-field v-model="maxProfitMargin" label="Maximum Profit Margin" outlined :disabled=dataCleaned></v-text-field> </v-col>
+          <v-col> <v-text-field v-model="minYear" label="Minimum Year" outlined :disabled=dataCleaned></v-text-field> </v-col>
         </v-row>
         <v-btn elevation="2" @click="cleanData" :disabled=dataCleaned>Clean Data</v-btn>
       </v-col>  
@@ -25,16 +28,6 @@
         <v-btn elevation="2" @click="analyzeData" :disabled='!dataCleaned || dataAnalyzed'>Analyze Data</v-btn>
       </v-col>
     </v-row>
-
-    <!--v-btn elevation="2" @click="analyzeTextAtrribute(['actor_1_name','actor_2_name','actor_3_name'], 'actorValueChart')" :disabled=!dataCleaned>Actor Values</v-btn>
-    <v-btn elevation="2" @click="analyzeTextAtrribute(['director_name'], 'directorValueChart')" :disabled=!dataCleaned>Director Values</v-btn>
-    <v-btn elevation="2" @click="analyzeKeywords('genres', 'genreValueChart')" :disabled=!dataCleaned>Genres</v-btn>
-    <v-btn elevation="2" @click="analyzeKeywords('plot_keywords', 'plotValueChart')" :disabled=!dataCleaned>Plot</v-btn>
-    <v-btn elevation="2" @click="analyzeKeywordProfit('genres', 'genreProfitChart')" :disabled=!dataCleaned>Genres Profit</v-btn>
-    <v-btn elevation="2" @click="analyzeKeywordProfit('plot_keywords', 'plotProfitChart')" :disabled=!dataCleaned>Plot Profit</v-btn>
-    <v-btn elevation="2" @click="analyzeDiminishingReturns('revenueProfitGraph')" :disabled=!dataCleaned>Update Graph</v-btn>
-    <v-btn elevation="2" @click="analyzeTextAtrributeAverageProfit(['actor_1_name','actor_2_name','actor_3_name'], 'actorProfitMarginChart')" :disabled=!dataCleaned>Actor Margins</v-btn>
-    <v-btn elevation="2" @click="analyzeTextAtrributeAverageProfit(['director_name'], 'directorProfitMarginChart')" :disabled=!dataCleaned>Director Margins</v-btn-->
 
     <apexchart type="line" height="350" :options="revenueProfitGraphOptions" :series="revenueProfitGraphData"></apexchart>
     <apexchart ref="actorValueChart" type="bar" height="350" :options="actorValueChartOptions" :series="actorValueChartData"></apexchart>
@@ -76,6 +69,7 @@
       showMaxChart: 20, 
       maxDecimals: 2, 
       minAmountForAverage: 4, 
+      minYear: 2000,
       graphValue: [0, 2, 5, 9, 5, 10, 3, 5, 0, 0, 1, 8, 2, 9, 0], 
       graphData: {
         width: 2,
@@ -349,7 +343,8 @@
       movieValid(movie) {
         return movie.name != "" && movie.budget != "" && movie.gross != "" 
           && movie.gross <= this.maxGrossing && movie.budget <= this.maxBudget
-          && movie.gross / movie.budget <= this.maxProfitMargin && movie.gross / movie.budget >= this.minProfitMargin
+          && movie.gross / movie.budget <= this.maxProfitMargin && movie.gross / movie.budget >= this.minProfitMargin 
+          && movie.title_year >= this.minYear;
       }, 
       clamp(value, min, max) {
         return value <= min ? min : value >= max ? max : value;
